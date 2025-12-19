@@ -1,0 +1,83 @@
+# params.yaml
+# WSI Radiomics feature configuration
+# Behavior:
+# - Missing feature group  -> do NOT compute
+# - Empty feature group    -> compute ALL features in the group
+# - Listed feature names   -> compute ONLY listed features
+
+
+# ------------------------------------------------------------
+# Cell-level features (computed for each cell / nucleus)
+# ------------------------------------------------------------
+cell_features:
+  # First-order intensity features
+
+  firstorder:
+#    - Energy
+#    - TotalEnergy
+#    - Entropy
+#    - Minimum
+#    - Percentile10
+#    - Percentile90
+#    - Maximum
+#    - Mean
+#    - Median
+#    - InterquartileRange
+#    - Range
+#    - MeanAbsoluteDeviation
+#    - RobustMeanAbsoluteDeviation
+#    - RootMeanSquared
+#    - StandardDeviation
+#    - Skewness
+#    - Kurtosis
+#    - Variance
+#    - Uniformity
+
+  # Shape features
+  shape:
+#    - MeshSurface
+#    - PixelSurface
+#    - Perimeter
+#    - PerimetertoSurfaceRatio
+#    - Sphericity
+#    - SphericalDisproportion
+#    - MaximumDiameter
+#    - MajorAxisLength
+#    - MinorAxisLength
+#    - Elongation
+#    - MeanCurvature
+#    - GaussianCurvature
+#    - MaximumCurvature
+#    - MinimumCurvature
+
+  # Texture features (optional)
+  glcm:
+  glrlm:
+  glszm:
+  ngtdm:
+  gldm:
+
+
+# ------------------------------------------------------------
+# WSI-level aggregation over cells
+# ------------------------------------------------------------
+aggregation:
+
+  # Aggregation functions applied to each cell-level feature
+  # Supported:
+  #   Mean, Median, StandardDeviation, IQR, Skewness, ExcessKurtosis
+  functions:
+    - Mean
+    - Median
+    - StandardDeviation
+    - InterquartileRange
+    - Skewness
+    - Kurtosis
+
+  # Optional: aggregate by cell type
+  # If omitted or empty, aggregation is done across all cells
+  by_cell_type:
+    - Neoplastic
+    - Inflammatory
+    - Connective
+    - Epithelial

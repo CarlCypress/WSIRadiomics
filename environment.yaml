@@ -6,6 +6,7 @@ dependencies:
   - pip
   - numpy
   - pandas
+  - pyyaml
   - scipy
   - scikit-image
   - openslide
