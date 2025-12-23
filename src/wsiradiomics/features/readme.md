@@ -191,29 +191,41 @@ Let the ROI be represented by a surface or perimeter mesh with $N_f$ elements, v
     Measures how elongated the shape is.
     Values range from 0 (maximally elongated) to 1 (circle-like).
 
-11. Mean Curvature
+11. Mean Curvature (2D Boundary Curvature)
+    For a 2D closed boundary curve parameterized as $(x(t), y(t))$, define the signed curvature:
     $$
-    H = \frac{1}{2}(k_1 + k_2)
+    \kappa(t) =
+    \frac{x'(t)y''(t) - y'(t)x''(t)}
+    {\left(x'(t)^2 + y'(t)^2\right)^{3/2}}
     $$
-    Here, $k_1$ and $k_2$ are the **principal curvatures** at a surface point (the maximum and minimum normal curvatures).
+    Then the **Mean Curvature** is defined as the mean absolute curvature along the boundary:
+    $$
+    \text{Mean Curvature} = \frac{1}{N_b} \sum_{i=1}^{N_b} \left|\kappa_i\right|
+    $$
+    where $N_b$ is the number of sampled boundary points.
+    Measures the average bending strength of the 2D contour.
 
-12. Gaussian Curvature
+12. Gaussian Curvature 
+    In 2D there is no surface Gaussian curvature ($k_1k_2$) because a planar curve has only one curvature $\kappa$.
+    We use a practical 2D proxy (curvature energy):
     $$
-    K = k_1 \cdot k_2
+    \text{Gaussian Curvature} = \frac{1}{N_b}\sum_{i=1}^{N_b} \kappa_i^2
     $$
-    Measures intrinsic surface curvature, independent of embedding.
+    Larger values indicate more highly curved / more tortuous boundaries.
 
 13. Maximum Curvature
+    Using the same 2D signed curvature $\kappa_i$ sampled along the boundary:
     $$
-    k_{\max} = \max(k_1, k_2)
+    \text{Maximum Curvature} = \max_{i}\ \kappa_i
     $$
-    Represents the strongest local bending direction.
+    Represents the strongest local bending in the positive curvature direction.
 
 14. Minimum Curvature
+    Using the same 2D signed curvature $\kappa_i$ sampled along the boundary:
     $$
-    k_{\min} = \min(k_1, k_2)
+    \text{Minimum Curvature} = \min_{i}\ \kappa_i
     $$
-    Represents the weakest local bending direction.
+    Represents the strongest local bending in the negative curvature direction.
 
 ## Gray Level Co-occurrence Matrix (GLCM) Features
 

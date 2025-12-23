@@ -36,6 +36,8 @@ from typing import Any, Dict, List, Optional, Sequence
 from wsiradiomics.io.params import load_params, default_params
 from wsiradiomics.io.geojson import load_cells_from_geojson
 from wsiradiomics.io.slide import open_slide
+from wsiradiomics.pipeline.cell_features import compute_cell_features
+from wsiradiomics.pipeline.wsi_aggregation import compute_wsi_features
 from wsiradiomics.utils.patch_check import find_nonwhite_patch
 
 
@@ -119,74 +121,9 @@ def build_out_csv_path(svs_path: Path, out_dir: Path, params_path: Optional[Path
 # Feature computation
 # -------------------------
 
-
-def compute_cell_features(slide: Any, cells: List[Dict[str, Any]], cfg: Dict[str, Any]) -> List[Dict[str, float]]:
-    """
-    Compute enabled cell-level features for each cell.
-
-    Expected output:
-        list of dicts (one per cell), e.g.
-        [{"Energy":..., "Perimeter":..., ...}, ...]
-    """
-    enabled = resolve_enabled_cell_features(cfg.get("cell_features", {}))
-
-    rows: List[Dict[str, float]] = []
-    for cell in cells:
-        feats: Dict[str, float] = {}
-
-        if enabled.get("firstorder") is not None:
-            feats.update(compute_firstorder_features(slide, cell, enabled["firstorder"], cfg))
-
-        if enabled.get("shape") is not None:
-            feats.update(compute_shape_features(cell, enabled["shape"], cfg))
-
-        # TODO: texture groups
-
-        rows.append(feats)
-
-    return rows
-
-
-def resolve_enabled_cell_features(cell_cfg: Dict[str, Any]) -> Dict[str, Optional[Sequence[str]]]:
-    """
-    Convert YAML selection into an internal format:
-    - None => ALL in that group
-    - list[str] => only those
-    - missing => group disabled
-    """
-    enabled: Dict[str, Optional[Sequence[str]]] = {}
-    for group, selection in cell_cfg.items():
-        enabled[group] = selection
-    return enabled
-
-
-def compute_firstorder_features(
-    slide: Any,
-    cell: Dict[str, Any],
-    selection: Optional[Sequence[str]],
-    cfg: Dict[str, Any],
-) -> Dict[str, float]:
-    """Compute first-order features for a single cell."""
-    raise NotImplementedError
-
-
-def compute_shape_features(
-    cell: Dict[str, Any],
-    selection: Optional[Sequence[str]],
-    cfg: Dict[str, Any],
-) -> Dict[str, float]:
-    """Compute shape features from polygon geometry."""
-    raise NotImplementedError
-
-
 # -------------------------
 # Aggregation (WSI-level)
 # -------------------------
-
-def compute_wsi_features(cell_rows: List[Dict[str, float]], cfg: Dict[str, Any]) -> Dict[str, float]:
-    """Aggregate cell-level feature rows into WSI-level features."""
-    raise NotImplementedError
-
 
 # -------------------------
 # Output

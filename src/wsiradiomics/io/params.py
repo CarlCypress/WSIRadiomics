@@ -96,6 +96,9 @@ def default_params() -> Dict[str, Any]:
             "functions": _AGG_FUNCTION_UNIVERSE.copy(),
             "by_cell_type": None,
         },
+        "output": {
+            "save_cell_features": False,
+        },
     }
 
 
@@ -199,6 +202,25 @@ def _normalize_params(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
         out["aggregation"] = out_agg
 
+    # ---- output ----
+    out_output: Dict[str, Any] = {"save_cell_features": False}
+
+    if "output" in cfg:
+        raw_out = cfg.get("output", None)
+
+        # output: (empty) or output: null
+        if raw_out is None:
+            raw_out = {}
+
+        if not isinstance(raw_out, dict):
+            raise ValueError("output must be a mapping (dict).")
+
+        # save_cell_features default False
+        scf = raw_out.get("save_cell_features", False)
+        out_output["save_cell_features"] = bool(scf)
+
+    out["output"] = out_output
+
     return out
 
 
@@ -288,4 +310,13 @@ def _normalize_by_cell_type(selection: Any) -> Optional[List[str]]:
         f"Invalid value for aggregation.by_cell_type: {selection}. "
         "Use empty/null for no grouping, or a list of cell type names."
     )
+
+
+if __name__ == "__main__":
+    from pprint import pprint
+    print("Default cfg:")
+    pprint(default_params())
+
+    # print("Loaded cfg:")
+    # pprint(load_params(Path("examples/params.yaml")))
 
