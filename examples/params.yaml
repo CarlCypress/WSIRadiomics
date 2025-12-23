@@ -81,9 +81,10 @@ aggregation:
     - Inflammatory
     - Connective
     - Epithelial
+    - Dead
 
 # ------------------------------------------------------------
 # Output options
 # ------------------------------------------------------------
 output:
-#  save_cell_features: True   # Whether to save intermediate cell-level features to CSV
+  save_cell_features: True   # Whether to save intermediate cell-level features to CSV

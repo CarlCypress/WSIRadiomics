@@ -9,10 +9,16 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Sequence
 
+import logging
+import time
 import numpy as np
 
 from wsiradiomics.features import firstorder as fo
 from wsiradiomics.features import shape as sh
+
+logger = logging.getLogger(__name__)
+
+_LOG_EVERY_N_CELLS = 200
 
 
 def compute_cell_features(slide: Any, cells: List[Dict[str, Any]], cfg: Dict[str, Any]) -> List[Dict[str, float]]:
@@ -30,10 +36,20 @@ def compute_cell_features(slide: Any, cells: List[Dict[str, Any]], cfg: Dict[str
         - computed features
         - metadata: __cell_type__, optional __feature_id__
     """
+    t0 = time.time()
+
     enabled = resolve_enabled_cell_features(cfg.get("cell_features", {}))
 
+    logger.info("Cell feature extraction started: n_cells=%d", len(cells))
+    logger.info("Enabled cell feature groups: %s", sorted(enabled.keys()) if enabled else [])
+
+    if logger.isEnabledFor(logging.DEBUG):
+        # show selection details (None means ALL)
+        for g, sel in enabled.items():
+            logger.debug("Group '%s' selection: %s", g, "ALL" if sel is None else list(sel))
+
     rows: List[Dict[str, float]] = []
-    for cell in cells:
+    for idx, cell in enumerate(cells, start=1):
         feats: Dict[str, float] = {}
 
         # metadata for later by_cell_type aggregation
@@ -41,21 +57,56 @@ def compute_cell_features(slide: Any, cells: List[Dict[str, Any]], cfg: Dict[str
         if cell.get("feature_id") is not None:
             feats["__feature_id__"] = str(cell["feature_id"])
 
-        # ---- firstorder ----
-        if "firstorder" in enabled:
-            feats.update(compute_firstorder_features(slide, cell, enabled["firstorder"], cfg))
+        try:
+            # ---- firstorder ----
+            if "firstorder" in enabled:
+                t1 = time.time()
+                feats.update(compute_firstorder_features(slide, cell, enabled["firstorder"], cfg))
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug("Cell %d: firstorder done in %.3fs", idx, time.time() - t1)
 
-        # ---- shape ----
-        if "shape" in enabled:
-            feats.update(compute_shape_features(cell, enabled["shape"], cfg))
+            # ---- shape ----
+            if "shape" in enabled:
+                t2 = time.time()
+                feats.update(compute_shape_features(cell, enabled["shape"], cfg))
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug("Cell %d: shape done in %.3fs", idx, time.time() - t2)
 
-        # ---- textures: reserved, not implemented ----
-        # if "glcm" in enabled: ...
-        # if "gldm" in enabled: ...
-        # etc.
+            # ---- textures: reserved, not implemented ----
+            # if "glcm" in enabled: ...
+            # if "gldm" in enabled: ...
+            # etc.
+
+        except Exception as e:
+            # keep running even if one cell fails
+            logger.warning(
+                "Failed to compute features for cell %d/%d (cell_type=%s, feature_id=%s): %s",
+                idx,
+                len(cells),
+                feats.get("__cell_type__", "Unknown"),
+                feats.get("__feature_id__", ""),
+                repr(e),
+                exc_info=logger.isEnabledFor(logging.DEBUG),
+            )
+
+            # best-effort: fill enabled groups with NaNs so aggregation stays stable
+            if "firstorder" in enabled:
+                feats.update(_nan_features(enabled["firstorder"], fo.FEATURES_ALL))
+            if "shape" in enabled:
+                feats.update(_nan_features(enabled["shape"], sh.FEATURES_ALL))
 
         rows.append(feats)
 
+        # coarse progress log
+        if idx == 1 or idx % _LOG_EVERY_N_CELLS == 0 or idx == len(cells):
+            elapsed = time.time() - t0
+            rate = idx / elapsed if elapsed > 0 else float("inf")
+            logger.info(
+                "Processed cells: %d/%d (%.1f%%), %.1f cells/s",
+                idx, len(cells), 100.0 * idx / max(1, len(cells)), rate
+            )
+
+    logger.info("Cell feature extraction finished: n_rows=%d, elapsed=%.2fs", len(rows), time.time() - t0)
     return rows
 
 
@@ -94,6 +145,7 @@ def compute_firstorder_features(
     """
     poly = cell.get("polygon_xy")
     if not poly or len(poly) < 3:
+        logger.debug("Firstorder: invalid polygon (len<3), returning NaNs")
         return _nan_features(selection, fo.FEATURES_ALL)
 
     level = int(cfg.get("slide_level", 0))
@@ -128,10 +180,12 @@ def compute_firstorder_features(
 
     patch = _read_patch_safe(slide, minx, miny, w, h, level=level)
     if patch is None:
+        logger.debug("Firstorder: patch is None, returning NaNs")
         return _nan_features(selection, fo.FEATURES_ALL)
 
     img = _to_gray_or_channel(patch, channel=channel)
     if img.size == 0:
+        logger.debug("Firstorder: empty image patch, returning NaNs")
         return _nan_features(selection, fo.FEATURES_ALL)
 
     # polygon to target-level local coords
@@ -141,6 +195,7 @@ def compute_firstorder_features(
     mask = _polygon_mask(img.shape[0], img.shape[1], poly_local)
     values = img[mask]
     if values.size == 0:
+        logger.debug("Firstorder: mask has no pixels, returning NaNs")
         return _nan_features(selection, fo.FEATURES_ALL)
 
     return fo.compute(values, selection=selection, params=params)
@@ -156,6 +211,7 @@ def compute_shape_features(
     """
     poly = cell.get("polygon_xy")
     if not poly or len(poly) < 3:
+        logger.debug("Shape: invalid polygon (len<3), returning NaNs")
         return _nan_features(selection, sh.FEATURES_ALL)
 
     # optional physical spacing
@@ -308,4 +364,3 @@ def _polygon_mask(h: int, w: int, poly_xy: List[tuple[float, float]]) -> np.ndar
         path = MplPath(np.asarray(poly_xy, dtype=np.float64))
         inside = path.contains_points(pts)
         return inside.reshape((h, w))
-
