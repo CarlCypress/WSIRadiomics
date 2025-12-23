@@ -1,3 +1,3 @@
 wsi_path,mask_path
-/home/huangdn/dataset/HE_of_PC/徐加章.svs,/home/huangdn/CellViT-plus-plus/result/徐加章_cells.geojson
-/home/huangdn/dataset/HE_of_PC/蒋钰清.svs,/home/huangdn/CellViT-plus-plus/result/蒋钰清_cells.geojson
+/path/to/wsi/CASE_001.svs,/path/to/masks/CASE_001_cells.geojson
+/path/to/wsi/CASE_002.svs,/path/to/masks/CASE_002_cells.geojson

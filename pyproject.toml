@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wsiradiomics"
-version = "0.1.0"
+version = "0.1.1"
 description = "WSI radiomics feature extraction from cell polygons (GeoJSON) and WSI slides"
 readme = "README.md"
 requires-python = ">=3.10"

@@ -135,41 +135,41 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    import argparse
+    if __name__ == "__main__":
+        import argparse
+        import logging
+        from pprint import pprint
 
-    # NOTE: Example CLI runner for local debugging.
-    # For pip users, they should configure logging in their own code.
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    )
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        )
 
-    parser = argparse.ArgumentParser("wsiradiomics")
-    parser.add_argument(
-        "--svs",
-        required=False,
-        default="/home/huangdn/dataset/HE_of_PC/陆懿红.svs",
-        help="Path to WSI file (.svs)",
-    )
-    parser.add_argument(
-        "--geojson",
-        required=False,
-        default="/home/huangdn/CellViT-plus-plus/result/陆懿红_cells.geojson",
-        help="Path to per-cell GeoJSON",
-    )
-    parser.add_argument(
-        "--params",
-        required=False,
-        default="/home/huangdn/WSIRadiomics/examples/params.yaml",
-        help="Path to params.yaml",
-    )
-    args = parser.parse_args()
+        parser = argparse.ArgumentParser("wsiradiomics-extract")
+        parser.add_argument(
+            "--svs",
+            required=True,
+            help="Path to WSI file (.svs/.tiff/.ndpi)",
+        )
+        parser.add_argument(
+            "--geojson",
+            required=True,
+            help="Path to per-cell polygons GeoJSON",
+        )
+        parser.add_argument(
+            "--params",
+            default=None,
+            help="Path to params.yaml (optional)",
+        )
+        args = parser.parse_args()
 
-    res = extract(
-        args.svs,
-        args.geojson,
-        params_path=args.params,
-    )
+        res = extract(
+            args.svs,
+            args.geojson,
+            params_path=args.params,
+        )
+
+        pprint(res["wsi_features"])
 
     # If you want to quickly inspect counts:
     logger.info("Returned keys: %s", list(res.keys()))
