@@ -1,2 +1,94 @@
 # WSIRadiomics
 
+<p align="center">
+  <a href="README.md">English</a> |
+  <a href="README_cn.md">中文</a>
+</p>
+
+**WSIRadiomics** is a **cell-level → WSI-level radiomics feature extraction toolkit** for **Whole Slide Images (WSI)**.
+
+It supports starting from **cell instance segmentation results (GeoJSON)** to compute cell-level features and further aggregate them into **WSI-level features**, making it suitable for computational pathology, digital pathology, and multimodal research.
+
+## ✨ Features
+
+- 🧬 Cell-level → WSI-level feature computation pipeline  
+- 🧠 Supports basic radiomics features such as first-order and shape  
+- 🧩 Flexible YAML-based parameter configuration  
+- 🏷 Supports aggregation by cell type (`cell_type`)  
+- 📦 Modular design, easy to extend and customize  
+- 📝 Uses Python logging, no `print` statements  
+- 🚫 Core APIs **do not write files**, output is fully controlled by the user  
+
+## **📦 Installation**
+
+### Method 1: Install via PyPI (Recommended)
+```
+pip install wsiradiomics
+```
+Suitable for direct usage, server environments, and virtual environments.
+
+### Method 2: Install via Conda / Mamba Environment (Recommended for research)
+
+The project provides a complete environment file:
+```
+conda env create -f environment.yaml
+conda activate wsiradiomics
+```
+Or using mamba (faster):
+```
+mamba env create -f environment.yaml
+mamba activate wsiradiomics
+```
+> This method is especially suitable for **WSI / OpenSlide / Linux server** environments.
+
+## 🚀 Quick Start
+
+> It is recommended to first refer to the example code and configuration files in the `examples/` directory.
+
+### Example files overview
+```
+examples/
+├── example_file.csv    # CSV example for batch processing
+├── extract_from_pandas.py # Batch feature extraction example
+└── params.yaml       # Parameter configuration example
+```
+### 1️⃣ Single WSI feature extraction (API usage)
+```
+from wsiradiomics.extractor import extract
+
+res = extract(
+    svs_path="example.svs",
+    geojson_path="cells.geojson",
+    params_path="params.yaml",
+)
+
+wsi_features = res["wsi_features"]
+```
+### 2️⃣ Batch processing (CSV-driven, recommended)
+
+CSV example (see `examples/example_file.csv`):
+```
+wsi_path,mask_path
+/path/to/wsi_001.svs,/path/to/wsi_001_cells.geojson
+/path/to/wsi_002.svs,/path/to/wsi_002_cells.geojson
+```
+Run the example script:
+```
+python examples/extract_from_pandas.py \
+  --input_csv examples/example_file.csv \
+  --params examples/params.yaml \
+  --out_dir result/
+```
+Output results:
+```
+result/
+├── wsi_features.csv
+└── run_wsi_feature_extract.log
+```
+## 📄 License
+
+MIT License
+
+## 📬 Contact
+
+Feel free to submit issues or suggestions via GitHub Issues
