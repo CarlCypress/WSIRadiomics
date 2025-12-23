@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wsiradiomics"
+version = "0.1.0"
+description = "WSI radiomics feature extraction from cell polygons (GeoJSON) and WSI slides"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "D.N. Huang" }]
+keywords = ["WSI", "radiomics", "pathology", "openslide", "geojson"]
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "numpy",
+  "pandas",
+  "pyyaml",
+  "scipy",
+  "scikit-image",
+  "shapely",
+]
+
+[project.optional-dependencies]
+wsi = [
+  "openslide-python",
+  "pyvips",
+]
+
+geo = [
+  "geopandas",
+]
+
+dev = [
+  "build",
+  "twine",
+  "pytest",
+  "ruff",
+]
+
+[project.scripts]
+wsiradiomics-extract = "wsiradiomics.extractor:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

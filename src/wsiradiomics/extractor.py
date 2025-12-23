@@ -120,6 +120,19 @@ def extract(
     logger.info("WSI radiomics extraction finished")
     return out
 
+def main() -> None:
+    import argparse
+    from pprint import pprint
+
+    ap = argparse.ArgumentParser("wsiradiomics-extract")
+    ap.add_argument("--svs", required=True, help="Path to WSI file (.svs/.tiff/.ndpi)")
+    ap.add_argument("--geojson", required=True, help="Path to per-cell polygons GeoJSON")
+    ap.add_argument("--params", default=None, help="Path to params.yaml (optional)")
+    args = ap.parse_args()
+
+    res = extract(args.svs, args.geojson, params_path=args.params)
+    pprint(res["wsi_features"])
+
 
 if __name__ == "__main__":
     import argparse

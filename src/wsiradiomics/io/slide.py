@@ -10,6 +10,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, List, Sequence, Tuple, Optional
+import logging
+
+
+# -------------------------
+# Module logger (library-friendly)
+# -------------------------
+logger = logging.getLogger(__name__)
 
 
 # -------------------------
@@ -75,14 +82,18 @@ def open_slide(svs_path: Path | str) -> SlideReader:
     if not path.exists():
         raise FileNotFoundError(f"WSI not found: {path}")
 
+    logger.info("Opening slide: %s", path)
+
     # --- Try OpenSlide ---
     reader = _try_openslide(path)
     if reader is not None:
+        logger.info("Slide opened with backend: OpenSlide")
         return reader
 
     # --- Try tifffile fallback ---
     reader = _try_tifffile(path)
     if reader is not None:
+        logger.info("Slide opened with backend: tifffile")
         return reader
 
     raise RuntimeError(
@@ -130,15 +141,30 @@ class OpenSlideReader(SlideReader):
 
 
 def _try_openslide(path: Path) -> Optional[SlideReader]:
+    # Lazy import: do NOT import openslide at module import time
     try:
         import openslide  # type: ignore
-    except Exception:
+    except Exception as e:
+        logger.debug("OpenSlide import failed (%s). Will try fallback backends.", repr(e))
         return None
 
     try:
         osr = openslide.OpenSlide(str(path))
-        return OpenSlideReader(osr)
-    except Exception:
+        reader = OpenSlideReader(osr)
+
+        # Light introspection log (safe)
+        try:
+            logger.info(
+                "OpenSlide levels=%d level0=%s",
+                reader.level_count,
+                reader.level_dimensions[0] if reader.level_count > 0 else None,
+            )
+        except Exception:
+            pass
+
+        return reader
+    except Exception as e:
+        logger.debug("OpenSlide failed to open %s (%s).", path, repr(e))
         return None
 
 
@@ -256,11 +282,14 @@ class TiffFileReader(SlideReader):
 
 
 def _try_tifffile(path: Path) -> Optional[SlideReader]:
+    # Lazy import: do NOT import tifffile at module import time
     try:
         import tifffile  # type: ignore
-    except Exception:
+    except Exception as e:
+        logger.debug("tifffile import failed (%s).", repr(e))
         return None
 
+    tf = None
     try:
         tf = tifffile.TiffFile(str(path))
 
@@ -281,11 +310,24 @@ def _try_tifffile(path: Path) -> Optional[SlideReader]:
             tf.close()
             return None
 
-        return TiffFileReader(tf, levels)
-    except Exception:
+        reader = TiffFileReader(tf, levels)
+
         try:
-            tf.close()
+            logger.info(
+                "tifffile levels=%d level0=%s",
+                reader.level_count,
+                reader.level_dimensions[0] if reader.level_count > 0 else None,
+            )
+        except Exception:
+            pass
+
+        return reader
+
+    except Exception as e:
+        logger.debug("tifffile failed to open %s (%s).", path, repr(e))
+        try:
+            if tf is not None:
+                tf.close()
         except Exception:
             pass
         return None
-
