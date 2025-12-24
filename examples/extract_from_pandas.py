@@ -20,10 +20,30 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from wsiradiomics.extractor import extract
 
 
+def _init_worker_logging(log_file: str) -> None:
+    """
+    Initialize logging in worker process (Windows spawn won't inherit main process logging).
+    Keep it minimal: root logger -> console + same log file (append).
+    """
+    root = logging.getLogger()
+    if root.handlers:
+        return  # already configured
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(log_file, mode="a", encoding="utf-8"),
+        ],
+    )
+
+
 def _worker_extract_one(
     wsi_path: str,
     mask_path: str,
     params_path: Optional[str],
+    log_file: str,
 ) -> Tuple[bool, Dict[str, Any]]:
     """
     Worker process entry:
@@ -32,6 +52,9 @@ def _worker_extract_one(
       - payload on failure: {"wsi_path":..., "mask_path":..., "error": "...", "traceback": "..."}
     """
     import traceback
+
+    # IMPORTANT: configure logging inside worker
+    _init_worker_logging(log_file)
 
     try:
         res = extract(
@@ -55,18 +78,24 @@ def _worker_extract_one(
         }
 
 
-def main(input_csv: str | Path, out_dir: str | Path, params_path: str | Path | None = None, num_workers: int = 4) -> None:
+def main(
+    input_csv: str | Path,
+    out_dir: str | Path,
+    params_path: str | Path | None = None,
+    num_workers: int = 4,
+) -> None:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     log_file = os.path.join(out_dir, "run_wsi_feature_extract.log")
 
+    # main process logging
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(message)s",
         handlers=[
             logging.StreamHandler(),                 # console
-            logging.FileHandler(log_file, mode="w"), # file
+            logging.FileHandler(log_file, mode="w", encoding="utf-8"),  # file (overwrite)
         ],
     )
     logger = logging.getLogger(__name__)
@@ -99,14 +128,17 @@ def main(input_csv: str | Path, out_dir: str | Path, params_path: str | Path | N
     # multiprocessing
     # -------------------------
     with ProcessPoolExecutor(max_workers=int(num_workers)) as ex:
-        future_map = {}
-        for idx, (wsi_p, mask_p, params_p) in enumerate(tasks, start=1):
-            fut = ex.submit(_worker_extract_one, wsi_p, mask_p, params_p)
-            future_map[fut] = (idx, total, Path(wsi_p).name)
+        future_map: Dict[Any, Tuple[int, int, str, float]] = {}
 
+        # submit
+        for idx, (wsi_p, mask_p, params_p) in enumerate(tasks, start=1):
+            t_submit = time.time()
+            fut = ex.submit(_worker_extract_one, wsi_p, mask_p, params_p, log_file)
+            future_map[fut] = (idx, total, Path(wsi_p).name, t_submit)
+
+        # collect
         for fut in as_completed(future_map):
-            idx, total, name = future_map[fut]
-            t0 = time.time()
+            idx, total, name, t_submit = future_map[fut]
 
             try:
                 success, payload = fut.result()
@@ -124,7 +156,7 @@ def main(input_csv: str | Path, out_dir: str | Path, params_path: str | Path | N
                     ok += 1
                     logger.info(
                         "[%d/%d] DONE: %s | n_features=%d | %.2fs",
-                        idx, total, name, len(wsi_features), time.time() - t0
+                        idx, total, name, len(wsi_features), time.time() - t_submit
                     )
                 else:
                     fail += 1
@@ -156,10 +188,10 @@ def main(input_csv: str | Path, out_dir: str | Path, params_path: str | Path | N
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input_csv", default="/home/huangdn/WSIRadiomics/examples/example_file.csv")
-    ap.add_argument("--params", default="/home/huangdn/WSIRadiomics/examples/params.yaml")
-    ap.add_argument("--out_dir", default="/home/huangdn/WSIRadiomics/result")
-    ap.add_argument("--num_workers", type=int, default=4, help="Number of worker processes")
+    ap.add_argument("--input_csv", default=r"D:\research\WSIRadiomics\examples\HE_list.csv")
+    ap.add_argument("--params", default=r"D:\research\WSIRadiomics\examples\params.yaml")
+    ap.add_argument("--out_dir", default=r"D:\research\WSIRadiomics\result")
+    ap.add_argument("--num_workers", type=int, default=16, help="Number of worker processes")
     args = ap.parse_args()
 
     main(args.input_csv, args.out_dir, args.params, args.num_workers)

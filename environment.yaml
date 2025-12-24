@@ -13,6 +13,6 @@ dependencies:
   - openslide-python
   - shapely
   - geopandas
-  - pyvips
   - pip:
       - opencv-python-headless
+      - pyvips; platform_system != "Windows"

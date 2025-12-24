@@ -190,3 +190,6 @@ Icon
 *.nii
 *.dcm
 
+# private csv data
+examples/HE_list.csv
+
