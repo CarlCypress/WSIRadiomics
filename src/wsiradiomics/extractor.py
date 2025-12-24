@@ -5,13 +5,6 @@
 # @FileName: extractor.py
 # @Project : WSIRadiomics
 
-# -*- coding: utf-8 -*-
-# @Time    : 2025/12/19 09:00
-# @Author  : D.N. Huang
-# @Email   : CarlCypress@yeah.net
-# @FileName: extractor.py
-# @Project : WSIRadiomics
-
 """
 wsiradiomics.extractor
 
@@ -60,18 +53,43 @@ def extract(
     params_path: str | Path | None = None,
 ) -> Dict[str, Any]:
     """
-    Main API: extract radiomics features.
+    Extract radiomics features from a Whole Slide Image (WSI).
 
-    Returns:
-        Always returns:
+    This function computes cell-level radiomics features from a WSI and
+    aggregates them into WSI-level features. The behavior is fully
+    controlled by the configuration file.
+
+    Parameters
+    ----------
+    svs_path : str or pathlib.Path
+        Path to the whole slide image file (e.g. .svs, .tiff, .ndpi).
+    geojson_path : str or pathlib.Path
+        Path to the GeoJSON file containing per-cell polygon annotations.
+    params_path : str or pathlib.Path or None, optional
+        Path to a YAML configuration file. If None, default parameters
+        will be used.
+
+    Returns
+    -------
+    dict
+        A dictionary containing extracted features:
+
+        - Always includes:
           {
-            "wsi_features": Dict[str, float]
+              "wsi_features": Dict[str, float]
           }
 
-        Additionally returns (only when cfg["output"]["save_cell_features"] is True):
+        - Additionally includes (only if cfg["output"]["save_cell_features"] is True):
           {
-            "cell_features": List[Dict[str, Any]]
+              "cell_features": List[Dict[str, Any]]
           }
+
+    Notes
+    -----
+    - This function does NOT write any files.
+    - All outputs are returned in memory and must be handled by the caller.
+    - Slide resources are safely released after extraction.
+    - Logging is used instead of print statements.
     """
     inputs = ExtractorInputs(
         svs_path=Path(svs_path),
@@ -84,50 +102,56 @@ def extract(
     logger.info("GeoJSON: %s", inputs.geojson_path)
     logger.info("Params: %s", inputs.params_path if inputs.params_path else "(default params)")
 
-    # 0) Load config
     cfg = load_params(inputs.params_path) if inputs.params_path else default_params()
     logger.debug("Loaded cfg keys: %s", sorted(list((cfg or {}).keys())))
 
-    # 1) Load cell polygons (and optional properties like cell_type)
     logger.info("Loading cell polygons from GeoJSON")
     cells = load_cells_from_geojson(inputs.geojson_path)
     logger.info("Loaded %d cells", len(cells))
 
-    # 2) Open slide / image backend (OpenSlide, tifffile, etc.)
     logger.info("Opening slide")
     slide = open_slide(inputs.svs_path)
 
-    # 3) Compute cell-level features (list of dicts)
-    logger.info("Computing cell-level features")
-    cell_feature_rows: List[Dict[str, Any]] = compute_cell_features(slide, cells, cfg)
-    logger.info("Computed cell-level features for %d cells", len(cell_feature_rows))
+    try:
+        # 3) Cell-level features
+        logger.info("Computing cell-level features")
+        cell_feature_rows: List[Dict[str, Any]] = compute_cell_features(slide, cells, cfg)
+        logger.info("Computed cell-level features for %d cells", len(cell_feature_rows))
 
-    # 4) Aggregate to WSI-level features (single dict)
-    logger.info("Aggregating to WSI-level features")
-    wsi_features: Dict[str, float] = compute_wsi_features(cell_feature_rows, cfg)
-    logger.info("Generated %d WSI features", len(wsi_features))
+        # 4) WSI-level aggregation
+        logger.info("Aggregating to WSI-level features")
+        wsi_features: Dict[str, float] = compute_wsi_features(cell_feature_rows, cfg)
+        logger.info("Generated %d WSI features", len(wsi_features))
 
-    # 5) Decide whether to return cell features based on cfg
-    save_cell_features = bool(((cfg or {}).get("output", {}) or {}).get("save_cell_features", False))
+        save_cell_features = bool(
+            ((cfg or {}).get("output", {}) or {}).get("save_cell_features", False)
+        )
 
-    out: Dict[str, Any] = {"wsi_features": wsi_features}
-    if save_cell_features:
-        logger.info("Returning cell-level features (cfg.output.save_cell_features=True)")
-        out["cell_features"] = cell_feature_rows
-    else:
-        logger.info("Not returning cell-level features (cfg.output.save_cell_features=False/missing)")
+        out: Dict[str, Any] = {"wsi_features": wsi_features}
+        if save_cell_features:
+            logger.info("Returning cell-level features")
+            out["cell_features"] = cell_feature_rows
 
-    logger.info("WSI radiomics extraction finished")
-    return out
+        logger.info("WSI radiomics extraction finished")
+        return out
+
+    finally:
+        try:
+            if hasattr(slide, "close"):
+                slide.close()
+                logger.debug("Slide closed successfully")
+        except Exception:
+            logger.warning("Failed to close slide", exc_info=True)
+
 
 def main() -> None:
     import argparse
     from pprint import pprint
 
     ap = argparse.ArgumentParser("wsiradiomics-extract")
-    ap.add_argument("--svs", required=True, help="Path to WSI file (.svs/.tiff/.ndpi)")
-    ap.add_argument("--geojson", required=True, help="Path to per-cell polygons GeoJSON")
-    ap.add_argument("--params", default=None, help="Path to params.yaml (optional)")
+    ap.add_argument("--svs", required=True)
+    ap.add_argument("--geojson", required=True)
+    ap.add_argument("--params", default=None)
     args = ap.parse_args()
 
     res = extract(args.svs, args.geojson, params_path=args.params)
@@ -135,43 +159,24 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    if __name__ == "__main__":
-        import argparse
-        import logging
-        from pprint import pprint
+    import argparse
+    import logging
+    from pprint import pprint
 
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-        )
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
 
-        parser = argparse.ArgumentParser("wsiradiomics-extract")
-        parser.add_argument(
-            "--svs",
-            required=True,
-            help="Path to WSI file (.svs/.tiff/.ndpi)",
-        )
-        parser.add_argument(
-            "--geojson",
-            required=True,
-            help="Path to per-cell polygons GeoJSON",
-        )
-        parser.add_argument(
-            "--params",
-            default=None,
-            help="Path to params.yaml (optional)",
-        )
-        args = parser.parse_args()
+    parser = argparse.ArgumentParser("wsiradiomics-extract")
+    parser.add_argument("--svs", required=True)
+    parser.add_argument("--geojson", required=True)
+    parser.add_argument("--params", default=None)
+    args = parser.parse_args()
 
-        res = extract(
-            args.svs,
-            args.geojson,
-            params_path=args.params,
-        )
+    res = extract(args.svs, args.geojson, params_path=args.params)
+    pprint(res["wsi_features"])
 
-        pprint(res["wsi_features"])
-
-    # If you want to quickly inspect counts:
     logger.info("Returned keys: %s", list(res.keys()))
     logger.info("WSI features: %d", len(res.get("wsi_features", {}) or {}))
     if "cell_features" in res:
