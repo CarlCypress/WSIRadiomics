@@ -5,6 +5,13 @@
   <a href="README_cn.md">中文</a>
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/pypi/v/wsiradiomics.svg" />
+  <img src="https://img.shields.io/pypi/pyversions/wsiradiomics.svg" />
+  <img src="https://img.shields.io/badge/License-MIT-blue" />
+  <img src="https://img.shields.io/badge/Domain-Computational%20Pathology-brightgreen" />
+</p>
+
 **WSIRadiomics** is a **cell-level → WSI-level radiomics feature extraction toolkit** for **Whole Slide Images (WSI)**.
 
 It supports starting from **cell instance segmentation results (GeoJSON)** to compute cell-level features and further aggregate them into **WSI-level features**, making it suitable for computational pathology, digital pathology, and multimodal research.
@@ -19,7 +26,7 @@ It supports starting from **cell instance segmentation results (GeoJSON)** to co
 - 📝 Uses Python logging, no `print` statements  
 - 🚫 Core APIs **do not write files**, output is fully controlled by the user  
 
-## **📦 Installation**
+## 📦 Installation
 
 ### Method 1: Install via PyPI (Recommended)
 ```

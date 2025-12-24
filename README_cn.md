@@ -5,11 +5,18 @@
   <a href="README_cn.md">中文</a>
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/pypi/v/wsiradiomics.svg" />
+  <img src="https://img.shields.io/pypi/pyversions/wsiradiomics.svg" />
+  <img src="https://img.shields.io/badge/License-MIT-blue" />
+  <img src="https://img.shields.io/badge/Domain-Computational%20Pathology-brightgreen" />
+</p>
+
 **WSIRadiomics** 是一个用于 **全视野病理切片（Whole Slide Image, WSI）** 的 **细胞级 → WSI 级放射组学特征提取工具包**。
 
 它支持从 **细胞实例分割结果（GeoJSON）** 出发，计算细胞级特征，并进一步聚合为 **WSI 级特征**，适用于计算病理、数字病理与多模态研究。
 
-## ✨ Features
+## ✨ 功能特性
 
 - 🧬 Cell-level → WSI-level 特征计算流程
 - 🧠 支持 first-order、shape 等基础放射组学特征
@@ -19,7 +26,7 @@
 - 📝 使用 Python logging，不使用 print
 - 🚫 核心 API **不写文件**，完全由用户控制输出
 
-## **📦 Installation**
+## 📦 安装
 
 ### 方法一：通过 PyPI 安装（推荐）
 
@@ -47,7 +54,7 @@ mamba activate wsiradiomics
 
 > 该方式特别适合 **WSI / OpenSlide / Linux 服务器** 环境。
 
-## 🚀 Quick Start
+## 🚀 快速开始
 
 > 建议先参考 examples/ 文件夹中的示例代码和配置文件
 
@@ -101,10 +108,10 @@ result/
 └── run_wsi_feature_extract.log
 ```
 
-## 📄 License
+## 📄 许可证
 
 MIT License
 
-## 📬 Contact
+## 📬 联系方式
 
 欢迎通过 GitHub Issues 提交问题或建议
