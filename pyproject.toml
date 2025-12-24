@@ -30,7 +30,7 @@ dependencies = [
 [project.optional-dependencies]
 wsi = [
   "openslide-python",
-  "pyvips",
+  "pyvips; platform_system != 'Windows'",
 ]
 
 geo = [
