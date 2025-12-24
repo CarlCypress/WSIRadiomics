@@ -36,6 +36,14 @@ pip install wsiradiomics
 
 适合 直接使用 / 服务器环境 / 虚拟环境。
 
+> ⚠️ **重要说明（WSI 依赖）**
+> **还需手动安装 OpenSlide 系统库**：
+>
+> ```bash
+> # Windows / Linux（conda）
+> conda install -c conda-forge openslide openslide-python
+> ```
+
 ### 方法二：通过 Conda / Mamba 环境（推荐科研环境）
 
 项目提供了完整的环境文件：

@@ -34,6 +34,14 @@ pip install wsiradiomics
 ```
 Suitable for direct usage, server environments, and virtual environments.
 
+> ⚠️ **Important notice (WSI dependency)**  
+> **The OpenSlide system library must be installed manually**:
+>
+> ```bash
+> # Windows / Linux (conda)
+> conda install -c conda-forge openslide openslide-python
+> ```
+
 ### Method 2: Install via Conda / Mamba Environment (Recommended for research)
 
 The project provides a complete environment file:
