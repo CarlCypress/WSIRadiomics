@@ -193,3 +193,6 @@ Icon
 # private csv data
 examples/HE_list.csv
 
+# runtime outputs
+result/
+
