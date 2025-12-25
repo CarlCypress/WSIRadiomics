@@ -178,7 +178,7 @@ def main(
     out_df = out_df[fixed + feat_cols]
 
     out_csv = os.path.join(out_dir, "wsi_features.csv")
-    out_df.to_csv(out_csv, index=False, encoding="utf-8")
+    out_df.to_csv(out_csv, index=False, encoding="utf-8-sig")
 
     logger.info("Batch finished: ok=%d fail=%d total=%d", ok, fail, total)
     logger.info("WSI features saved to: %s", out_csv)
